@@ -42,6 +42,20 @@ async function run() {
         res.send({ status: "Already have this user" });
       }
     });
+
+    // add new recipe
+    app.post("/recipes", async (req, res) => {
+      const newRecipe = req.body;
+      const recipe = await recipeCollection.findOne({
+        recipeName: newRecipe.recipeName,
+      });
+      if (!recipe) {
+        const addRecipe = await recipeCollection.insertOne(newRecipe);
+        res.send({ status: "Successfully Added Recipe", user: addRecipe });
+      } else {
+        res.send({ status: "Already have Recipe" });
+      }
+    });
   } finally {
   }
 }
