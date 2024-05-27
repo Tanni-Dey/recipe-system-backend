@@ -1,8 +1,9 @@
 const express = require("express");
-const cors = require("cors");
 const app = express();
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const cors = require("cors");
 require("dotenv").config();
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+
 const port = process.env.PORT || 5000;
 
 //middleware
@@ -74,49 +75,51 @@ async function run() {
     app.get("/user", async (req, res) => {
       const userEmail = req.query.email;
       const user = await userCollection.findOne({ email: userEmail });
-      res.send({ statue: "success", user: user });
+      res.send({ status: "success", user: user });
     });
 
     //get user by id
     app.get("/user/:id", async (req, res) => {
       const id = req.params.id;
       const user = await userCollection.findOne({ _id: new ObjectId(id) });
-      res.send({ statue: "success", user: user });
+      res.send({ status: "success", user: user });
     });
 
     //get recipe by id
     app.get("/recipe/:id", async (req, res) => {
       const id = req.params.id;
       const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
-      res.send({ statue: "success", recipe: recipe });
+      res.send({ status: "success", recipe: recipe });
     });
 
-    //{
-    //   "recipeCreator": "t@gmail.com", "recipeId": "ghdgfsdfdjshfkjsdvf", "recipeBuyer": "e@gmail.com"
-    // }
     //update recipe and user by purchase recipe
     app.put("/recipe-details", async (req, res) => {
       const reqData = req.body;
-      const creatorUser = await userCollection.updateOne(
-        { email: reqData.recipeCreator },
-        { $set: { coin: Number(reqData.creatorCoin) } }
-      );
-      // const buyerUser = await userCollection.updateOne(
-      //   { email: reqData.recipeBuyer },
-      //   { $set: { coin: Number(coin) - 10 } }
-      // );
+      const creatorUser = await userCollection.findOne({
+        email: reqData.recipeCreator,
+      });
+      const buyerUser = await userCollection.findOne({
+        email: reqData.recipeBuyer,
+      });
 
-      // const recipe = await recipeCollection.updateOne(
-      //   { _id: new ObjectId(reqData.recipeId) },
-      //   {
-      //     $set: { purchased_by: Number(user.coin) + 1 },
-      //   }
-      // );
+      const updateCreatorUser = await userCollection.updateOne(
+        { email: reqData.recipeCreator },
+        { $set: { coin: parseInt(creatorUser.coin) + 1 } }
+      );
+      const updateBuyerUser = await userCollection.updateOne(
+        { email: reqData.recipeBuyer },
+        { $set: { coin: parseInt(buyerUser.coin) - 10 } }
+      );
+
+      const recipe = await recipeCollection.updateOne(
+        { _id: new ObjectId(reqData.recipeId) },
+        { $push: { purchasedBy: reqData.recipeBuyer } }
+      );
       res.send({
-        statue: "success",
-        // recipe: recipe,
-        creatorUser: creatorUser,
-        // buyerUser: buyerUser,
+        status: "success",
+        recipe: recipe,
+        creatorUser: updateCreatorUser,
+        buyerUser: updateBuyerUser,
       });
     });
   } finally {
